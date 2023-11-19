@@ -22,33 +22,12 @@ type ClientStoreItem struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-func NewClientStore(config *Config) *ClientStore {
-	db, err := gorm.Open(config.Dialector, defaultConfig)
-	if err != nil {
-		panic(err)
-	}
-	// default client pool
-	s, err := db.DB()
-	if err != nil {
-		panic(err)
-	}
-	s.SetMaxIdleConns(10)
-	s.SetMaxOpenConns(100)
-	s.SetConnMaxLifetime(time.Hour)
-
-	return NewClientStoreWithDB(config, db)
-}
-
-func NewClientStoreWithDB(config *Config, db *gorm.DB) *ClientStore {
+func NewClientStoreWithDB(tableName string, db *gorm.DB) *ClientStore {
 	store := &ClientStore{
 		db:        db,
-		tableName: "oauth2_clients",
+		tableName: tableName,
 		stdout:    os.Stderr,
 	}
-	if config.TableName != "" {
-		store.tableName = config.TableName
-	}
-
 	if !db.Migrator().HasTable(store.tableName) {
 		if err := db.Table(store.tableName).Migrator().CreateTable(&ClientStoreItem{}); err != nil {
 			panic(err)
